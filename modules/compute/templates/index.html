@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcolatore Interesse Composto - AWS Lab</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f7f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        h2 {
+            color: #232f3e;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background-color: #ff9900;
+            border: none;
+            color: white;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        #risultato-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 6px;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .history {
+            margin-top: 2rem;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+        }
+
+        .history-item {
+            font-size: 0.9rem;
+            background: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #ff9900;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Calcolatore Interessi</h2>
+
+    <div class="form-group">
+        <label for="capitale">Capitale Iniziale (€)</label>
+        <input type="number" id="capitale" step="0.01" placeholder="Es. 1000">
+    </div>
+
+    <div class="form-group">
+        <label for="tasso">Tasso Annuo (%)</label>
+        <input type="number" id="tasso" step="0.01" placeholder="Es. 5">
+    </div>
+
+    <div class="form-group">
+        <label for="anni">Anni</label>
+        <input type="number" id="anni" placeholder="Es. 10">
+    </div>
+
+    <div class="form-group">
+        <label for="deposito">Deposito Mensile (€)</label>
+        <input type="number" id="deposito" step="0.01" placeholder="Es. 100">
+    </div>
+
+    <button onclick="inviaCalcolo()">CALCOLA E SALVA</button>
+
+    <div id="risultato-box"></div>
+
+    <div class="history">
+        <small>Ultime simulazioni salvate:</small>
+        <div id="lista-cronologia"></div>
+    </div>
+</div>
+
+<script>
+    window.onload = aggiornaCronologia;
+
+    async function inviaCalcolo() {
+        const capitale = document.getElementById('capitale').value;
+        const tasso = document.getElementById('tasso').value;
+        const anni = document.getElementById('anni').value;
+        const deposito = document.getElementById('deposito').value;
+
+        const resBox = document.getElementById('risultato-box');
+
+        try {
+            const response = await fetch('/calcola', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    capitale: capitale,
+                    tasso: tasso,
+                    anni: anni,
+                    deposito_mensile: deposito
+                })
+            });
+
+            const data = await response.json();
+
+            resBox.style.display = "block";
+
+            if (!response.ok) {
+                resBox.style.backgroundColor = "#f8d7da";
+                resBox.style.color = "#721c24";
+                resBox.innerHTML = `Errore: ${data.errore || "Errore durante il calcolo"}`;
+                return;
+            }
+
+            resBox.style.backgroundColor = "#d4edda";
+            resBox.style.color = "#155724";
+            resBox.innerHTML = `Risultato finale: € ${Number(data.risultato).toFixed(2)}`;
+
+            aggiornaCronologia();
+
+        } catch (error) {
+            resBox.style.display = "block";
+            resBox.style.backgroundColor = "#f8d7da";
+            resBox.style.color = "#721c24";
+            resBox.innerHTML = "Errore di connessione al server";
+        }
+    }
+
+    async function aggiornaCronologia() {
+        try {
+            const response = await fetch('/cronologia');
+            const dati = await response.json();
+            const lista = document.getElementById('lista-cronologia');
+
+            if (!Array.isArray(dati) || dati.length === 0) {
+                lista.innerHTML = "<div class='history-item'>Nessun calcolo presente</div>";
+                return;
+            }
+
+            lista.innerHTML = dati.map(c => `
+                <div class="history-item">
+                    Capitale: €${c.capitale_iniziale} <br>
+                    Tasso: ${c.tasso}% <br>
+                    Anni: ${c.anni} <br>
+                    Deposito mensile: €${c.deposito_mensile} <br>
+                    Risultato finale: €${c.risultato_finale}
+                </div>
+            `).join('');
+
+        } catch (e) {
+            console.error("Errore cronologia", e);
+        }
+    }
+</script>
+
+</body>
+</html>

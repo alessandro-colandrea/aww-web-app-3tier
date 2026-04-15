@@ -1,0 +1,11 @@
+#valori come esempio
+region="eu-west-1"
+vpc_cidr = "10.0.0.0/16"
+subnet_pubb = "10.0.1.0/24"
+subnet_priv = "10.0.2.0/24"
+ami= "ami-08f9a9c699d2ab3f9"
+instance_type = "t3.micro"
+subnet_priv2 = "10.0.3.0/24"
+db_user     = "admin"
+db_name     = "interessi_db"
+subnet_pubb2="10.0.4.0/24"
